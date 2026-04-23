@@ -429,11 +429,22 @@
             return new Blob(chunks);
         }
 
-        function bootEmulator(blobUrl, name) {
+        function hashGameId(s) {
+            // Deterministic positive 31-bit integer hash so both peers
+            // compute the same EJS_gameID for the same ROM filename.
+            let h = 5381;
+            for (let i = 0; i < s.length; i++) {
+                h = (((h << 5) + h) ^ s.charCodeAt(i)) | 0;
+            }
+            return Math.abs(h) || 1;
+        }
+
+        function bootEmulator(blobUrl, prettyName, romFileName) {
             window.EJS_player = '#game';
             window.EJS_core = 'segaMD';
             window.EJS_gameUrl = blobUrl;
-            window.EJS_gameName = name;
+            window.EJS_gameName = prettyName;
+            window.EJS_gameID = hashGameId(romFileName);
             window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
             window.EJS_startOnLoaded = false;
 
@@ -441,8 +452,13 @@
                 const server = ($mpServer.value || '').trim();
                 if (server) {
                     window.EJS_netplayServer = server;
-                    window.EJS_netplayUrl = server; // older/newer name variant
                 }
+                window.EJS_netplayICEServers = [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                ];
             }
 
             const script = document.createElement('script');
@@ -490,14 +506,14 @@
                           : mpMode === 'join' ? ' <span style="color: var(--accent);">— joining</span>'
                           : '';
             setMsg(`Now playing: <b>${name}</b>${modeTag}`);
-            bootEmulator(blobUrl, name);
+            bootEmulator(blobUrl, name, rom.name);
 
             if (mpMode !== 'solo') {
                 const tip = document.createElement('p');
                 tip.style.cssText = 'margin-top: 10px; font-size: 13px; color: var(--muted);';
                 tip.innerHTML = mpMode === 'host'
-                    ? 'Once the game loads, open the EmulatorJS menu → <b>Netplay</b> → <b>Create a room</b>, then share the code with your friend.'
-                    : 'Once the game loads, open the EmulatorJS menu → <b>Netplay</b> → <b>Join a room</b> and paste the host\'s code.';
+                    ? 'Once the game loads, hover/tap the player to reveal the bottom toolbar and click the <b>Netplay</b> icon → <b>Create a room</b>, then share the code with your friend.'
+                    : 'Once the game loads, hover/tap the player to reveal the bottom toolbar and click the <b>Netplay</b> icon → <b>Join a room</b> and paste the host\'s code.';
                 $player.appendChild(tip);
             }
         }
