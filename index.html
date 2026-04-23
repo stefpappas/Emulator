@@ -242,23 +242,78 @@
             render(filtered);
         });
 
-        function play(rom) {
-            $sel.style.display = 'none';
-            $player.classList.add('active');
-            $np.innerHTML = `Now playing: <b>${prettyName(rom.name)}</b>`;
+        function formatSize(bytes) {
+            if (!bytes) return '?';
+            const mb = bytes / 1024 / 1024;
+            return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+        }
 
-            const url = `https://archive.org/download/${IA_ID}/${encodeURIComponent(rom.name)}`;
+        async function downloadWithProgress(url, onProgress) {
+            const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const total = Number(res.headers.get('Content-Length')) || 0;
+            if (!res.body || !res.body.getReader) {
+                const blob = await res.blob();
+                onProgress(blob.size, blob.size);
+                return blob;
+            }
+            const reader = res.body.getReader();
+            const chunks = [];
+            let loaded = 0;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                loaded += value.byteLength;
+                onProgress(loaded, total);
+            }
+            return new Blob(chunks);
+        }
 
+        function bootEmulator(blobUrl, name) {
             window.EJS_player = '#game';
             window.EJS_core = 'segaMD';
-            window.EJS_gameUrl = url;
-            window.EJS_gameName = prettyName(rom.name);
+            window.EJS_gameUrl = blobUrl;
+            window.EJS_gameName = name;
             window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
             window.EJS_startOnLoaded = false;
 
             const script = document.createElement('script');
             script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
             document.body.appendChild(script);
+        }
+
+        async function play(rom) {
+            $sel.style.display = 'none';
+            $player.classList.add('active');
+            const name = prettyName(rom.name);
+            const setMsg = (html) => { $np.innerHTML = html; };
+            setMsg(`Preparing <b>${name}</b>…`);
+
+            const direct = `https://archive.org/download/${IA_ID}/${encodeURIComponent(rom.name)}`;
+            const proxied = `https://corsproxy.io/?url=${encodeURIComponent(direct)}`;
+
+            const onProgress = (loaded, total) => {
+                const pct = total ? ` (${Math.round((loaded / total) * 100)}%)` : '';
+                setMsg(`Downloading <b>${name}</b>… ${formatSize(loaded)} / ${formatSize(total)}${pct}`);
+            };
+
+            let blob;
+            try {
+                blob = await downloadWithProgress(direct, onProgress);
+            } catch (err) {
+                setMsg(`Direct download failed (${err.message}); retrying via proxy…`);
+                try {
+                    blob = await downloadWithProgress(proxied, onProgress);
+                } catch (err2) {
+                    setMsg(`<span style="color:#ffbaba">Failed to load <b>${name}</b>: ${err2.message}</span>`);
+                    return;
+                }
+            }
+
+            const blobUrl = URL.createObjectURL(blob);
+            setMsg(`Now playing: <b>${name}</b>`);
+            bootEmulator(blobUrl, name);
         }
 
         $back.addEventListener('click', () => {
