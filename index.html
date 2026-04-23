@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonic The Hedgehog</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            min-height: 100vh;
+        }
+        header {
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(180deg, #0033a0 0%, #001766 100%);
+            border-bottom: 2px solid #ffcc00;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 1px;
+        }
+        header p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+        #game {
+            width: 100%;
+            max-width: 960px;
+            margin: 20px auto;
+            aspect-ratio: 4 / 3;
+            background: #111;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.2);
+        }
+        footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        kbd {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .controls {
+            max-width: 960px;
+            margin: 0 auto 20px;
+            padding: 0 20px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sonic The Hedgehog</h1>
+        <p>Sega Genesis / Mega Drive &mdash; in your browser</p>
+    </header>
+
+    <div id="game"></div>
+
+    <div class="controls">
+        <strong>Default controls:</strong>
+        Arrow keys = D-Pad &nbsp;&middot;&nbsp;
+        <kbd>X</kbd> = A &nbsp;&middot;&nbsp;
+        <kbd>S</kbd> = B &nbsp;&middot;&nbsp;
+        <kbd>Z</kbd> = C &nbsp;&middot;&nbsp;
+        <kbd>Enter</kbd> = Start
+    </div>
+
+    <footer>
+        Powered by <a href="https://emulatorjs.org" style="color:#ffcc00;">EmulatorJS</a>
+    </footer>
+
+    <script>
+        EJS_player = '#game';
+        EJS_core = 'segaMD';
+        EJS_gameUrl = 'roms/sonic.md';
+        EJS_gameName = 'Sonic The Hedgehog';
+        EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+        EJS_startOnLoaded = false;
+    </script>
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
