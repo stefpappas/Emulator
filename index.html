@@ -445,7 +445,7 @@
             window.EJS_gameUrl = blobUrl;
             window.EJS_gameName = prettyName;
             window.EJS_gameID = hashGameId(romFileName);
-            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+            window.EJS_pathtodata = 'https://cdn.emulatorjs.org/nightly/data/';
             window.EJS_startOnLoaded = false;
 
             if (mpMode !== 'solo') {
@@ -467,7 +467,7 @@
             }
 
             const script = document.createElement('script');
-            script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+            script.src = 'https://cdn.emulatorjs.org/nightly/data/loader.js';
             document.body.appendChild(script);
         }
 
