@@ -252,9 +252,9 @@
                         <input type="url" id="mp-server-url" value="https://netplay.emulatorjs.org" spellcheck="false">
                     </div>
                     <div style="color: var(--muted); font-size: 12px; margin-top: 8px;">
-                        Uses the public EmulatorJS netplay server by default. If it's down or unreachable,
-                        point this at your own instance (see
-                        <a href="https://github.com/EmulatorJS/EmulatorJS-Netplay" target="_blank" rel="noopener" style="color: var(--accent);">EmulatorJS-Netplay</a>).
+                        Netplay is an experimental feature in EmulatorJS &mdash; expect rough edges.
+                        Uses the public server by default; point this at your own instance
+                        (<a href="https://github.com/EmulatorJS/EmulatorJS-Netplay" target="_blank" rel="noopener" style="color: var(--accent);">EmulatorJS-Netplay</a>) if it's unreachable.
                     </div>
                 </div>
             </div>
@@ -453,6 +453,11 @@
                 if (server) {
                     window.EJS_netplayServer = server;
                 }
+                // Netplay is an experimental feature in EmulatorJS v4.x and is
+                // gated behind two undocumented flags — both must be true or
+                // the toolbar button stays hidden.
+                window.EJS_DEBUG_XX = true;
+                window.EJS_EXPERIMENTAL_NETPLAY = true;
                 window.EJS_netplayICEServers = [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
