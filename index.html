@@ -94,6 +94,87 @@
             color: #ffbaba;
         }
 
+        /* ---- Multiplayer panel ---- */
+        .mp-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .mp-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .mp-head strong { font-size: 14px; }
+        .mp-toggle {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .mp-body {
+            display: none;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+        .mp-panel.open .mp-body { display: block; }
+        .mp-panel.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(255, 204, 0, 0.3);
+        }
+        .mp-modes {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0 12px;
+            flex-wrap: wrap;
+        }
+        .mp-mode {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .mp-mode:hover { border-color: var(--accent); }
+        .mp-mode.selected {
+            background: var(--accent);
+            color: #111;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        .mp-server {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .mp-server input {
+            flex: 1;
+            padding: 8px 10px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            outline: none;
+        }
+        .mp-server input:focus { border-color: var(--accent); }
+        .mp-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #888;
+        }
+        .mp-dot.on { background: #3ecf8e; box-shadow: 0 0 6px #3ecf8e; }
+
         /* ---- Player ---- */
         #player-wrap { display: none; }
         #player-wrap.active { display: block; }
@@ -152,6 +233,32 @@
 
     <main>
         <section id="selector">
+            <div class="mp-panel" id="mp-panel">
+                <div class="mp-head" id="mp-head">
+                    <span class="mp-dot" id="mp-dot"></span>
+                    <strong>Multiplayer</strong>
+                    <span id="mp-summary" style="color: var(--muted);">Solo play</span>
+                    <span class="mp-toggle" id="mp-toggle">▼</span>
+                </div>
+                <div class="mp-body">
+                    <div class="mp-modes">
+                        <button type="button" class="mp-mode selected" data-mode="solo">Solo</button>
+                        <button type="button" class="mp-mode" data-mode="host">Host game</button>
+                        <button type="button" class="mp-mode" data-mode="join">Join game</button>
+                    </div>
+                    <div id="mp-hint">Play on your own. Pick a game below.</div>
+                    <div class="mp-server">
+                        <label for="mp-server-url" style="color: var(--muted); font-size: 12px;">Netplay server:</label>
+                        <input type="url" id="mp-server-url" value="https://netplay.emulatorjs.org" spellcheck="false">
+                    </div>
+                    <div style="color: var(--muted); font-size: 12px; margin-top: 8px;">
+                        Uses the public EmulatorJS netplay server by default. If it's down or unreachable,
+                        point this at your own instance (see
+                        <a href="https://github.com/EmulatorJS/EmulatorJS-Netplay" target="_blank" rel="noopener" style="color: var(--accent);">EmulatorJS-Netplay</a>).
+                    </div>
+                </div>
+            </div>
+
             <div class="toolbar">
                 <input type="search" id="search" placeholder="Search games…" autocomplete="off">
                 <span id="count"></span>
@@ -194,7 +301,55 @@
         const $back    = document.getElementById('back');
         const $np      = document.getElementById('now-playing');
 
+        const $mpPanel   = document.getElementById('mp-panel');
+        const $mpHead    = document.getElementById('mp-head');
+        const $mpToggle  = document.getElementById('mp-toggle');
+        const $mpSummary = document.getElementById('mp-summary');
+        const $mpDot     = document.getElementById('mp-dot');
+        const $mpHint    = document.getElementById('mp-hint');
+        const $mpServer  = document.getElementById('mp-server-url');
+
         let allRoms = [];
+        let mpMode = localStorage.getItem('mpMode') || 'solo';
+        const savedServer = localStorage.getItem('mpServer');
+        if (savedServer) $mpServer.value = savedServer;
+
+        function updateMpUi() {
+            document.querySelectorAll('.mp-mode').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.mode === mpMode);
+            });
+            const active = mpMode !== 'solo';
+            $mpPanel.classList.toggle('active', active);
+            $mpDot.classList.toggle('on', active);
+            if (mpMode === 'solo') {
+                $mpSummary.textContent = 'Solo play';
+                $mpHint.textContent = 'Play on your own. Pick a game below.';
+            } else if (mpMode === 'host') {
+                $mpSummary.textContent = 'Hosting a game';
+                $mpHint.innerHTML = 'Pick a game below. Once it loads, open the EmulatorJS menu (bottom bar of the player) → <b>Netplay</b> → <b>Create a room</b>, then share the room code with your friend.';
+            } else if (mpMode === 'join') {
+                $mpSummary.textContent = 'Joining a game';
+                $mpHint.innerHTML = 'Pick the <b>same game</b> the host picked. Once it loads, open the EmulatorJS menu → <b>Netplay</b> → <b>Join a room</b> and enter the host\'s code.';
+            }
+        }
+
+        $mpHead.addEventListener('click', () => {
+            $mpPanel.classList.toggle('open');
+            $mpToggle.textContent = $mpPanel.classList.contains('open') ? '▲' : '▼';
+        });
+        document.querySelectorAll('.mp-mode').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mpMode = btn.dataset.mode;
+                localStorage.setItem('mpMode', mpMode);
+                updateMpUi();
+            });
+        });
+        $mpServer.addEventListener('change', () => {
+            localStorage.setItem('mpServer', $mpServer.value.trim());
+        });
+        if (mpMode !== 'solo') $mpPanel.classList.add('open');
+        updateMpUi();
 
         function prettyName(filename) {
             return filename
@@ -282,6 +437,14 @@
             window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
             window.EJS_startOnLoaded = false;
 
+            if (mpMode !== 'solo') {
+                const server = ($mpServer.value || '').trim();
+                if (server) {
+                    window.EJS_netplayServer = server;
+                    window.EJS_netplayUrl = server; // older/newer name variant
+                }
+            }
+
             const script = document.createElement('script');
             script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
             document.body.appendChild(script);
@@ -323,8 +486,20 @@
             }
 
             const blobUrl = URL.createObjectURL(blob);
-            setMsg(`Now playing: <b>${name}</b>`);
+            const modeTag = mpMode === 'host' ? ' <span style="color: var(--accent);">— hosting</span>'
+                          : mpMode === 'join' ? ' <span style="color: var(--accent);">— joining</span>'
+                          : '';
+            setMsg(`Now playing: <b>${name}</b>${modeTag}`);
             bootEmulator(blobUrl, name);
+
+            if (mpMode !== 'solo') {
+                const tip = document.createElement('p');
+                tip.style.cssText = 'margin-top: 10px; font-size: 13px; color: var(--muted);';
+                tip.innerHTML = mpMode === 'host'
+                    ? 'Once the game loads, open the EmulatorJS menu → <b>Netplay</b> → <b>Create a room</b>, then share the code with your friend.'
+                    : 'Once the game loads, open the EmulatorJS menu → <b>Netplay</b> → <b>Join a room</b> and paste the host\'s code.';
+                $player.appendChild(tip);
+            }
         }
 
         $back.addEventListener('click', () => {
