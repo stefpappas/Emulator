@@ -249,7 +249,11 @@
         }
 
         async function downloadWithProgress(url, onProgress) {
-            const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            const res = await fetch(url, {
+                mode: 'cors',
+                credentials: 'omit',
+                referrerPolicy: 'no-referrer',
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const total = Number(res.headers.get('Content-Length')) || 0;
             if (!res.body || !res.body.getReader) {
@@ -291,24 +295,31 @@
             setMsg(`Preparing <b>${name}</b>…`);
 
             const direct = `https://archive.org/download/${IA_ID}/${encodeURIComponent(rom.name)}`;
-            const proxied = `https://corsproxy.io/?url=${encodeURIComponent(direct)}`;
+            const sources = [
+                { label: 'direct', url: direct },
+                { label: 'corsproxy.io', url: `https://corsproxy.io/?url=${encodeURIComponent(direct)}` },
+                { label: 'allorigins',   url: `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}` },
+                { label: 'codetabs',     url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(direct)}` },
+            ];
 
             const onProgress = (loaded, total) => {
                 const pct = total ? ` (${Math.round((loaded / total) * 100)}%)` : '';
                 setMsg(`Downloading <b>${name}</b>… ${formatSize(loaded)} / ${formatSize(total)}${pct}`);
             };
 
-            let blob;
-            try {
-                blob = await downloadWithProgress(direct, onProgress);
-            } catch (err) {
-                setMsg(`Direct download failed (${err.message}); retrying via proxy…`);
+            let blob, lastErr;
+            for (const src of sources) {
                 try {
-                    blob = await downloadWithProgress(proxied, onProgress);
-                } catch (err2) {
-                    setMsg(`<span style="color:#ffbaba">Failed to load <b>${name}</b>: ${err2.message}</span>`);
-                    return;
+                    setMsg(`Fetching <b>${name}</b> via ${src.label}…`);
+                    blob = await downloadWithProgress(src.url, onProgress);
+                    break;
+                } catch (err) {
+                    lastErr = err;
                 }
+            }
+            if (!blob) {
+                setMsg(`<span style="color:#ffbaba">Failed to load <b>${name}</b>: ${lastErr && lastErr.message}</span>`);
+                return;
             }
 
             const blobUrl = URL.createObjectURL(blob);
